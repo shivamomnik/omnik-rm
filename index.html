@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Omnik RM Planner</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f1117;--surface:#1a1d27;--surface2:#222638;--border:#2e3348;--accent:#4f8ef7;--accent2:#7c5cbf;--green:#22c55e;--amber:#f59e0b;--red:#ef4444;--text:#e8eaf0;--text2:#8b90a7;--text3:#5a5f75;--font:'DM Sans',sans-serif;--mono:'DM Mono',monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;font-size:15px}
+.hdr{background:var(--surface);border-bottom:1px solid var(--border);padding:16px 32px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+.logo{display:flex;align-items:center;gap:12px}
+.logo-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px}
+.logo-text{font-size:18px;font-weight:700}.logo-sub{font-size:12px;color:var(--text2)}
+.hdr-date{font-size:12px;color:var(--text2);font-family:var(--mono)}
+.page{padding:28px 32px;max-width:1600px;margin:0 auto}
+.section{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:20px}
+.sec-title{font-size:15px;font-weight:700;margin-bottom:4px}
+.sec-sub{font-size:13px;color:var(--text2);margin-bottom:18px}
+.upload-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.dropzone{border:2px dashed var(--border);border-radius:10px;padding:28px 20px;text-align:center;background:var(--bg);transition:border-color .2s,background .2s;position:relative;overflow:hidden}
+.dropzone:hover{border-color:var(--accent);background:rgba(79,142,247,.05)}
+.dropzone.ok{border-color:var(--green);border-style:solid;background:rgba(34,197,94,.05)}
+.dropzone label{display:block;cursor:pointer}
+.dropzone input[type=file]{position:absolute;width:1px;height:1px;opacity:0;left:-9999px}
+.dz-icon{font-size:28px;margin-bottom:10px}
+.dz-label{font-size:14px;font-weight:600;margin-bottom:5px}
+.dz-hint{font-size:12px;color:var(--text2)}
+.dz-btn{display:inline-block;margin-top:12px;padding:7px 18px;background:var(--accent);color:#fff;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer}
+.dz-status{font-size:13px;color:var(--green);margin-top:8px;font-weight:600;min-height:20px}
+.cons-tbl{width:100%;border-collapse:collapse}
+.cons-tbl th{text-align:left;padding:9px 12px;font-size:11px;font-weight:700;color:var(--text2);letter-spacing:.5px;text-transform:uppercase;border-bottom:1px solid var(--border);background:var(--bg)}
+.cons-tbl td{padding:9px 12px;border-bottom:1px solid var(--border);font-size:13.5px}
+.cons-tbl tr:last-child td{border-bottom:none}
+.cons-input{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:5px 9px;color:var(--text);font-family:var(--mono);font-size:13px;width:85px;text-align:right}
+.cons-input:focus{outline:none;border-color:var(--accent)}
+.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;letter-spacing:.3px}
+.b-ml{background:rgba(79,142,247,.15);color:var(--accent)}
+.b-sh{background:rgba(124,92,191,.15);color:#9b7de8}
+.b-pof{background:rgba(245,158,11,.15);color:var(--amber)}
+.b-san{background:rgba(34,197,94,.15);color:var(--green)}
+.b-oth{background:rgba(139,144,167,.1);color:var(--text2)}
+.gen-btn{display:inline-flex;align-items:center;gap:8px;padding:12px 28px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-family:var(--font);font-size:15px;font-weight:700;cursor:pointer;transition:background .2s}
+.gen-btn:hover{background:#3a7de0}
+.gen-btn:disabled{opacity:.4;cursor:not-allowed}
+.sum-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.sum-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px}
+.sum-lbl{font-size:11px;color:var(--text2);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.sum-val{font-size:26px;font-weight:700;font-family:var(--mono)}
+.sum-sub{font-size:12px;color:var(--text2);margin-top:3px}
+.v-red{color:var(--red)}.v-amb{color:var(--amber)}.v-grn{color:var(--green)}.v-blu{color:var(--accent)}
+.tbl-wrap{overflow-x:auto;border-radius:10px;border:1px solid var(--border)}
+.rm-tbl{width:100%;border-collapse:collapse;font-size:13px}
+.rm-tbl th{background:var(--bg);padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--text2);letter-spacing:.5px;text-transform:uppercase;border-bottom:1px solid var(--border);white-space:nowrap}
+.rm-tbl th.r,.rm-tbl td.r{text-align:right}
+.rm-tbl td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+.rm-tbl td.r{font-family:var(--mono)}
+.rm-tbl tbody tr:hover td{background:rgba(255,255,255,.02)}
+.grp-hdr td{background:var(--surface2)!important;font-size:11px;font-weight:700;color:var(--text2);letter-spacing:.8px;text-transform:uppercase;padding:7px 12px}
+.pill{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap}
+.p-grn{background:rgba(34,197,94,.15);color:var(--green)}
+.p-amb{background:rgba(245,158,11,.15);color:var(--amber)}
+.p-red{background:rgba(239,68,68,.15);color:var(--red)}
+.p-grey{background:rgba(139,144,167,.1);color:var(--text2)}
+.dot{width:5px;height:5px;border-radius:50%;background:currentColor;display:inline-block}
+.tbc-tag{font-size:9px;background:rgba(245,158,11,.15);color:var(--amber);padding:1px 4px;border-radius:3px;font-weight:700;margin-left:3px}
+.bl{border-left:1px solid var(--border)}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:8px;font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;border:none;transition:all .2s}
+.btn-out{background:transparent;border:1px solid var(--border);color:var(--text)}.btn-out:hover{border-color:var(--accent);color:var(--accent)}
+.btn-grn{background:var(--green);color:#fff}.btn-grn:hover{background:#16a34a}
+.btn-amb{background:var(--amber);color:#fff}.btn-amb:hover{background:#d97706}
+.alert-red{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);color:var(--red);border-radius:8px;padding:11px 14px;font-size:13px;margin-bottom:14px;display:flex;align-items:flex-start;gap:8px}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 18px;font-size:14px;color:var(--text);box-shadow:0 8px 32px rgba(0,0,0,.4);z-index:999;opacity:0;transition:opacity .3s}
+.toast.show{opacity:1}
+#reportSection{display:none}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="logo">
+    <div class="logo-icon">⬡</div>
+    <div><div class="logo-text">Omnik RM Planner</div><div class="logo-sub">Raw Material Planning Tool</div></div>
+  </div>
+  <div class="hdr-date" id="hDate"></div>
+</div>
+
+<div class="page">
+
+  <!-- STEP 1: UPLOAD -->
+  <div class="section">
+    <div class="sec-title">📁 Step 1 — Upload Files</div>
+    <div class="sec-sub">Upload File 1 (factory floor stock) and File 3 (import consignment register). Containers with no ETA default to 90 days from today.</div>
+    <div class="upload-grid">
+      <div class="dropzone" id="zone1">
+        <label for="f1input">
+          <div class="dz-icon">📊</div>
+          <div class="dz-label">File 1 — Factory Floor Stock</div>
+          <div class="dz-hint">Raw_material_stock_June_2026.xlsx</div>
+          <div class="dz-btn">Choose File</div>
+        </label>
+        <input type="file" id="f1input" accept=".xlsx,.xls" onchange="loadFile1(this)">
+        <div class="dz-status" id="f1msg"></div>
+      </div>
+      <div class="dropzone" id="zone2">
+        <label for="f3input">
+          <div class="dz-icon">🚢</div>
+          <div class="dz-label">File 3 — Import Consignment Register</div>
+          <div class="dz-hint">IMPORT_DETAILS_OF_ALL_CONSIGNMENT.xlsx</div>
+          <div class="dz-btn">Choose File</div>
+        </label>
+        <input type="file" id="f3input" accept=".xlsx,.xls" onchange="loadFile3(this)">
+        <div class="dz-status" id="f3msg"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2: CONSUMPTION -->
+  <div class="section">
+    <div class="sec-title">⚡ Step 2 — Consumption Rates (Bags/Day)</div>
+    <div class="sec-sub">Update any rates that have changed. Pre-loaded from your stock file.</div>
+    <div style="overflow:hidden;border-radius:10px;border:1px solid var(--border)">
+      <table class="cons-tbl">
+        <thead><tr><th>Product Use</th><th>Group</th><th>Key Grades</th><th style="text-align:right">Bags/Day</th></tr></thead>
+        <tbody id="consBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- GENERATE BUTTON — completely standalone, nothing above it -->
+  <div style="text-align:center;padding:8px 0 24px">
+    <button class="gen-btn" id="genBtn" onclick="safeGenerate()">⚡ Generate Plan</button>
+    <div style="font-size:12px;color:var(--text2);margin-top:8px" id="genHint">Upload both files first</div>
+  </div>
+
+  <!-- STEP 3: REPORT -->
+  <div id="reportSection">
+    <div class="sum-grid" id="sumGrid"></div>
+    <div id="alertBox"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+      <div>
+        <div style="font-size:15px;font-weight:700;margin-bottom:3px">📋 Raw Material Planning Report</div>
+        <div style="font-size:13px;color:var(--text2)" id="rMeta"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-amb" onclick="doPDF()">⬇ PDF</button>
+        <button class="btn btn-grn" onclick="doExcel()">⬇ Excel</button>
+      </div>
+    </div>
+    <div class="tbl-wrap">
+      <table class="rm-tbl">
+        <thead>
+          <tr>
+            <th rowspan="2">Use</th><th rowspan="2">Resin</th><th rowspan="2">Manufacturer</th><th rowspan="2">Grade</th>
+            <th rowspan="2" class="r">Daily (Bags)</th><th rowspan="2" class="r">Stock on Ground</th>
+            <th rowspan="2" class="r">Days Left</th><th rowspan="2">Status</th>
+            <th colspan="2" style="text-align:center" class="bl">Total Upcoming</th>
+            <th colspan="4" style="text-align:center" class="bl">1st Upcoming</th>
+            <th colspan="3" style="text-align:center" class="bl">2nd Upcoming</th>
+            <th colspan="3" style="text-align:center" class="bl">To Order (MT)</th>
+          </tr>
+          <tr>
+            <th class="r bl"># Bags</th><th class="r"># Days</th>
+            <th class="bl">Date</th><th class="r">Bags</th><th class="r">Days Until</th><th class="r">Shortfall/Overflow</th>
+            <th class="bl">Date</th><th class="r">Bags</th><th class="r">Days Until</th>
+            <th class="r bl">120d</th><th class="r">150d</th><th class="r">180d</th>
+          </tr>
+        </thead>
+        <tbody id="rmBody"></tbody>
+      </table>
+    </div>
+    <div style="font-size:11px;color:var(--text2);margin-top:8px">
+      <span class="tbc-tag">TBC</span> = no ETA in import register, defaulted to 90 days &nbsp;·&nbsp; Shortfall/Overflow = days of stock when 1st container arrives (negative = gap before arrival)
+    </div>
+  </div>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const today = new Date(); today.setHours(0,0,0,0);
+const tbc = new Date(today); tbc.setMonth(tbc.getMonth()+3);
+document.getElementById('hDate').textContent = today.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+
+let stockGroups=[], containers=[], planRows=[];
+let f1ok=false, f3ok=false;
+
+const GROUPS=[
+  {use:'MULTILAYER FFS',label:'LDPE (150AC group)',grades:['150AC','7523','2308FGA','312E','J1005FY20'],daily:300},
+  {use:'MULTILAYER FFS',label:'LDPE (352E group)',grades:['352E','2023JN','100AC','2022AC','FD0274'],daily:50},
+  {use:'MULTILAYER FFS',label:'LLDPE',grades:['2645.11G','CEFOR 1210P','118WJ','NGL010FS','1001XBU','1018XBU','1001BU','1018BU','LF10181','Q1018H','2045.11G','119ZJ','122WJ','2645.01G','CEFOR1210','C4LL1018'],daily:1800},
+  {use:'SHRINK FILM',label:'LLDPE NonSlip',grades:['CEFOR 1211P','122NJ','NGL010FG','DFDA7047','CEFOR1211'],daily:30},
+  {use:'SHRINK FILM',label:'EXCEED 1018MA',grades:['1018MA','1018BN'],daily:18},
+  {use:'MULTILAYER FFS',label:'Metallocenes (EXCEED 1018MB)',grades:['EXCEED 1018MB','EXCEED1018MB','EXCEED M1018MB','EXCEED M1018.MB','EXCEED  1018MB','1018MB','HP1018BI','SP1510HA','7118LA','SUPEER 7118LA'],daily:500},
+  {use:'LAMINATION FILM',label:'DOW ELITE 5401G',grades:['5401G'],daily:0},
+  {use:'MULTILAYER FFS',label:'INNATE ST50/TH60/ST70/ST100',grades:['ST 50','ST50','TH 60','TH60','ST 70','ST70','ST 100','ST100','INNATE ST50','INNATE ST100'],daily:90},
+  {use:'MULTILAYER FFS',label:'DOW EXP GRADE',grades:['XZ89507','XUS89770.03','XUS 89770.05','XUS89770.10'],daily:0},
+  {use:'MULTILAYER FFS',label:'EXCEED XP8784MK',grades:['XP8784 MK','XP 8784 MK','M0814MK','XP8784MK','XP 8656 MK','XP8656MK','EXCEED XP8784','EXCEED TOUGH','M0814','M1415','TOUGH+M0814','TOUGH+M1415','1415MO','0814MK','XP7052'],daily:120},
+  {use:'NON SLIP METALLOCINE',label:'EXCEED ML grades',grades:['XP 8784 ML','XP8784ML','XP 8656 ML','XP8656ML','EXC514','9243ML','EXC516','9272ML','XP 6026 ML','XP6026ML'],daily:0},
+  {use:'MULTILAYER FFS',label:'ENABLE 2010ME/RE',grades:['1020ME','2010ME','2010RE','ENABLE 2010ME','ENABLE 2010 ME','ENABLE2010ME','ENABLE 2010 RE','ENABLE2010RE'],daily:450},
+  {use:'SHRINK FILM',label:'ENABLE Shrink',grades:['2705MC','2703MC','4002MC','2010MA','ENABLE 2705','ENABLE 2703','ENABLE 4002','ENABLE 2010MA'],daily:65},
+  {use:'SHRINK FILM',label:'LDPE Shrink',grades:['165BW1','165BWI','03322BW1','FE3000','303E','150BWI','310E','FR2375C','165 BW1','165 BWI'],daily:120},
+  {use:'MULTILAYER FFS',label:'HDPE',grades:['FJ01552','HTA002','5207','HTA001','HFW00346','M9255F','DGDA 5310','DGDA5310','HF0961','F120A','XUS 59900.81','XUS59900','HD5207','HD5208'],daily:540},
+  {use:'PACKING BAGS',label:'HDPE Packing',grades:['8800'],daily:24},
+  {use:'SANTANA',label:'HDPE TR144',grades:['TR 144','TR144','HHM-TR144','LOTRENE Q TR144','F0146D','MDPE HR 515','HR515'],daily:190},
+  {use:'LD PLAIN',label:'LDPE Plain',grades:['160AT','4023AT','4023','FD0474','582E','160 AT','LD 160AT','LD160AT'],daily:35},
+  {use:'POF SHRINK FILM',label:'PP Terpolymer',grades:['SFI841A','SFC751R','RC6131','Adsyl 6089','RC116L','841A','TER POLYMER','TERPOLYMER','TE POLYPROPELENE'],daily:50},
+  {use:'POF SHRINK FILM',label:'LLDPE Terpolymer',grades:['FK1820'],daily:0},
+  {use:'POF TRIAL',label:'PP Homopolymer',grades:['NGP034S','NGP080F'],daily:0},
+  {use:'POF SHRINK FILM',label:'LLDPE POF',grades:['2645G','2045G','NG5056G','DOWLEX 2645G','DOWLEX2645G','DOWLEX 2045G','DOWLEX2045G','DOWLEX 2645.01G'],daily:200},
+  {use:'STRETCH-HOOD',label:'VISTAMAXX / BOREALIS',grades:['3020FL','FT5236'],daily:0},
+  {use:'MULTILAYER FFS',label:'EXP GRADE / SEALM',grades:['SEALM 1015','SEALM1015','TOUGH +M1415','1015RK','EXXTRA SEAL'],daily:0},
+];
+
+function norm(s){return String(s||'').toUpperCase().replace(/[^A-Z0-9]/g,'');}
+function matches(mat,grades){const nm=norm(mat);return grades.some(g=>{const ng=norm(g);return nm.includes(ng)||ng.includes(nm);});}
+
+function parseDate(v){
+  if(!v)return null;
+  if(v instanceof Date)return v;
+  if(typeof v==='number'){const d=new Date(Math.round((v-25569)*86400*1000));return isNaN(d)?null:d;}
+  if(typeof v==='string'){
+    const s=v.trim().replace(/;/g,'');
+    const fmts=[[/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/,(_,d,m,y)=>new Date(+y,+m-1,+d)],
+                [/^(\d{1,2})\/(\d{1,2})\/(\d{2})$/,(_,d,m,y)=>new Date(2000+ +y,+m-1,+d)],
+                [/^(\d{1,2})-(\d{1,2})-(\d{4})$/,(_,d,m,y)=>new Date(+y,+m-1,+d)],
+                [/^(\d{4})-(\d{2})-(\d{2})$/,(_,y,m,d)=>new Date(+y,+m-1,+d)]];
+    for(const[rx,fn]of fmts){const m=s.match(rx);if(m){const dt=fn(...m);if(!isNaN(dt))return dt;}}
+  }
+  return null;
+}
+
+function loadFile1(inp){
+  const f=inp.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=e=>{
+    try{
+      const wb=XLSX.read(e.target.result,{type:'array',cellDates:true});
+      const sn=wb.SheetNames.find(n=>n.toLowerCase().includes('stock')||n.toLowerCase().includes('rm'))||wb.SheetNames[0];
+      const rows=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,defval:null});
+      let hr=0;
+      for(let i=0;i<10;i++){if(rows[i]&&rows[i].some(c=>c&&/^USES?$/i.test(String(c).trim()))){hr=i;break;}}
+      const h=rows[hr].map(c=>c?String(c).trim().toUpperCase():'');
+      const gi=k=>h.findIndex(x=>x.includes(k));
+      const useI=gi('USE'),resinI=gi('RESIN'),nameI=gi('NAME'),gradeI=gi('GRADE');
+      const subI=gi('SUB TOTAL'),totalI=gi('TOTAL BAGS'),consI=gi('CONSUMPTION');
+      const wb2=XLSX.read(e.target.result,{type:'array',cellDates:true,cellFormula:false});
+      const rows2=XLSX.utils.sheet_to_json(wb2.Sheets[sn],{header:1,defval:null,raw:true});
+      stockGroups=[];let curGroup=null;
+      for(let i=hr+1;i<rows2.length;i++){
+        const row=rows2[i];if(!row||!row[gradeI])continue;
+        const use=row[useI]?String(row[useI]).trim():'';
+        const resin=row[resinI]?String(row[resinI]).trim():'';
+        const name=row[nameI]?String(row[nameI]).trim():'';
+        const grade=String(row[gradeI]).trim();
+        const sub=Number(row[subI])||0,total=Number(row[totalI])||0,cons=Number(row[consI])||0;
+        if(use){curGroup={use,resin,name,grade,subTotal:sub,totalBags:total,cons,grades:[grade]};stockGroups.push(curGroup);}
+        else if(curGroup)curGroup.grades.push(grade);
+      }
+      buildConsTable();
+      document.getElementById('f1msg').textContent='✓ '+stockGroups.length+' stock groups loaded';
+      document.getElementById('zone1').classList.add('ok');
+      f1ok=true;checkReady();
+    }catch(err){toast('❌ File 1 error: '+err.message);}
+  };
+  r.readAsArrayBuffer(f);
+}
+
+function loadFile3(inp){
+  const f=inp.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=e=>{
+    try{
+      const wb=XLSX.read(e.target.result,{type:'array',cellDates:true});
+      const sheets=wb.SheetNames.filter(n=>n.includes('2025')||n.includes('2026'));
+      containers=[];
+      const skipRx=/spares|machine|switch|car|battery|filter|conveyor|printing|non woven|pvc|aluminium|recycl|power back|water treat|industrial|electrical/i;
+      for(const sn of sheets){
+        const rows=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,defval:null,cellDates:true,raw:true});
+        let hr=0;
+        for(let i=0;i<6;i++){if(rows[i]&&rows[i].some(c=>c&&String(c).toUpperCase().includes('MATERIAL'))){hr=i;break;}}
+        const h=rows[hr].map(c=>c?String(c).trim().toUpperCase():'');
+        const mi=h.findIndex(x=>x==='MATERIAL'),mti=h.findIndex(x=>x.includes('METRIC'));
+        const etai=h.findIndex(x=>x==='ETA'),reci=h.findIndex(x=>x.includes('RECEIVED DATE'));
+        for(let i=hr+1;i<rows.length;i++){
+          const row=rows[i];if(!row||!row[mi])continue;
+          const mat=String(row[mi]).trim();
+          if(!mat||/cancelled|dummy/i.test(mat)||skipRx.test(mat))continue;
+          const recRaw=row[reci],recDate=parseDate(recRaw);
+          if(recDate&&recDate<=today)continue;
+          if(typeof recRaw==='string'&&/^received$/i.test(recRaw.trim()))continue;
+          const etaRaw=row[etai];
+          let etaDate=parseDate(etaRaw),isTbc=!etaDate;
+          if(!etaDate)etaDate=new Date(tbc);
+          // Past ETA no received = at port, treat as tomorrow
+          if(etaDate<today){etaDate=new Date(today);etaDate.setDate(etaDate.getDate()+1);isTbc=false;}
+          const mt=Number(row[mti])||0,bags=Math.round((mt*1000)/25);
+          if(!bags)continue;
+          containers.push({material:mat,mt,bags,eta:etaDate,sheet:sn,tbc:isTbc});
+        }
+      }
+      containers.sort((a,b)=>a.eta-b.eta);
+      document.getElementById('f3msg').textContent='✓ '+containers.length+' upcoming containers ('+sheets.length+' sheets)';
+      document.getElementById('zone2').classList.add('ok');
+      f3ok=true;checkReady();
+    }catch(err){toast('❌ File 3 error: '+err.message);}
+  };
+  r.readAsArrayBuffer(f);
+}
+
+function checkReady(){
+  const btn=document.getElementById('genBtn');
+  const hint=document.getElementById('genHint');
+  if(f1ok&&f3ok){btn.disabled=false;hint.textContent='Both files loaded — click Generate';toast('✅ Both files loaded');}
+  else{btn.disabled=true;hint.textContent=(!f1ok&&!f3ok)?'Upload both files first':!f1ok?'Still need File 1':'Still need File 3';}
+}
+
+function buildConsTable(){
+  const body=document.getElementById('consBody');body.innerHTML='';
+  GROUPS.forEach((g,i)=>{
+    const match=stockGroups.find(sg=>matches(sg.grade,g.grades)||g.grades.some(gl=>matches(gl,[sg.grade])));
+    const def=match&&match.cons?match.cons:g.daily;
+    const uc=g.use.includes('MULTILAYER')?'b-ml':g.use.includes('SHRINK')?'b-sh':g.use.includes('POF')?'b-pof':g.use==='SANTANA'?'b-san':'b-oth';
+    const tr=document.createElement('tr');
+    tr.innerHTML='<td><span class="badge '+uc+'">'+g.use+'</span></td><td style="font-weight:600">'+g.label+'</td><td style="color:var(--text2);font-size:12px">'+g.grades.slice(0,4).join(', ')+(g.grades.length>4?'…':'')+'</td><td style="text-align:right"><input class="cons-input" type="number" id="c'+i+'" value="'+def+'" min="0"></td>';
+    body.appendChild(tr);
+  });
+}
+
+function safeGenerate(){
+  if(!f1ok||!f3ok){toast('❌ Upload both files first');return;}
+  try{generate();}catch(err){toast('❌ Error: '+err.message);console.error(err);}
+}
+
+function generate(){
+  planRows=[];
+  GROUPS.forEach((g,i)=>{
+    const daily=Number(document.getElementById('c'+i).value)||0;
+    let stock=0,resin='',mfr='';
+    stockGroups.forEach(sg=>{
+      if(matches(sg.grade,g.grades)||g.grades.some(gl=>matches(gl,[sg.grade]))){
+        stock+=sg.totalBags||sg.subTotal||0;
+        if(!resin)resin=sg.resin;if(!mfr)mfr=sg.name;
+      }
+    });
+    const ups=containers.filter(c=>matches(c.material,g.grades));
+    const upBags=ups.reduce((s,c)=>s+c.bags,0);
+    const totalWithUp=stock+upBags;
+    const daysLeft=daily>0?Math.floor(stock/daily):null;
+    const daysWithUp=daily>0&&totalWithUp>0?Math.floor(totalWithUp/daily):null;
+    let status='grey';
+    if(daily>0){if(daysLeft===null||daysLeft<30)status='red';else if(daysLeft<60)status='amber';else status='green';}
+    planRows.push({use:g.use,label:g.label,resin,mfr,stock,daily,daysLeft,status,upcoming:ups,upBags,totalWithUp,daysWithUp});
+  });
+  renderResults();
+  document.getElementById('reportSection').style.display='block';
+  document.getElementById('reportSection').scrollIntoView({behavior:'smooth'});
+}
+
+function renderResults(){
+  const crit=planRows.filter(r=>r.status==='red'&&r.daily>0).length;
+  const watch=planRows.filter(r=>r.status==='amber').length;
+  const ok=planRows.filter(r=>r.status==='green').length;
+  document.getElementById('sumGrid').innerHTML=
+    '<div class="sum-card"><div class="sum-lbl">Critical (&lt;30 days)</div><div class="sum-val v-red">'+crit+'</div><div class="sum-sub">need attention</div></div>'+
+    '<div class="sum-card"><div class="sum-lbl">Watch (30–60 days)</div><div class="sum-val v-amb">'+watch+'</div><div class="sum-sub">monitor closely</div></div>'+
+    '<div class="sum-card"><div class="sum-lbl">Adequate (60+ days)</div><div class="sum-val v-grn">'+ok+'</div><div class="sum-sub">in good shape</div></div>'+
+    '<div class="sum-card"><div class="sum-lbl">Upcoming Containers</div><div class="sum-val v-blu">'+containers.length+'</div><div class="sum-sub">en route</div></div>';
+  const alerts=planRows.filter(r=>r.status==='red'&&r.daily>0);
+  document.getElementById('alertBox').innerHTML=alerts.length?'<div class="alert-red">⚠️ <div><strong>Critical:</strong> '+alerts.map(r=>r.label).join(', ')+'</div></div>':'';
+  document.getElementById('rMeta').textContent='Generated '+today.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})+' · '+planRows.length+' groups · '+containers.length+' containers';
+  const body=document.getElementById('rmBody');body.innerHTML='';let lastUse=null;
+  for(const row of planRows){
+    if(row.use!==lastUse){const tr=document.createElement('tr');tr.className='grp-hdr';tr.innerHTML='<td colspan="21">▸ '+row.use+'</td>';body.appendChild(tr);lastUse=row.use;}
+    const pc=row.status==='green'?'p-grn':row.status==='amber'?'p-amb':row.status==='red'?'p-red':'p-grey';
+    const pl=row.status==='green'?'Adequate':row.status==='amber'?'Watch':row.status==='red'?'Critical':'N/A';
+    const dc=row.daysLeft===null?'':row.daysLeft<30?'color:var(--red);font-weight:700':row.daysLeft<60?'color:var(--amber);font-weight:600':'color:var(--green)';
+    const totalUpBags=row.upBags;
+    const totalUpDays=row.daily>0&&totalUpBags>0?Math.floor((row.stock+totalUpBags)/row.daily):null;
+    const c1=row.upcoming[0]||null,c2=row.upcoming[1]||null;
+    function dU(c){return c?Math.round((c.eta-today)/86400000):null;}
+    const du1=dU(c1),du2=dU(c2);
+    const sf1=(c1&&row.daily>0&&du1!==null)?row.daysLeft-du1:null;
+    const sfHtml=sf1!==null?(sf1>=0?'<span style="color:var(--green);font-weight:600">+'+sf1+'d</span>':'<span style="color:var(--red);font-weight:600">'+sf1+'d</span>'):'—';
+    function fmtDate(c){if(!c)return '—';return c.eta.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'2-digit'})+(c.tbc?'<span class="tbc-tag">TBC</span>':'');}
+    function toOrd(days){if(!row.daily)return '—';const gap=row.daily*days-(row.stock+totalUpBags);return gap>0?(gap/40).toFixed(1)+' MT':'OK';}
+    const tr=document.createElement('tr');
+    tr.innerHTML=
+      '<td style="color:var(--text2);font-size:12px">'+row.use+'</td>'+
+      '<td style="font-size:12px;color:var(--text2)">'+row.resin+'</td>'+
+      '<td style="font-weight:500">'+row.mfr+'</td>'+
+      '<td style="font-weight:600">'+row.label+'</td>'+
+      '<td class="r">'+(row.daily||'—')+'</td>'+
+      '<td class="r">'+row.stock.toLocaleString()+'</td>'+
+      '<td class="r" style="'+dc+'">'+(row.daysLeft!==null?row.daysLeft:'—')+'</td>'+
+      '<td><span class="pill '+pc+'"><span class="dot"></span>'+pl+'</span></td>'+
+      '<td class="r bl">'+(totalUpBags>0?totalUpBags.toLocaleString():'—')+'</td>'+
+      '<td class="r">'+(totalUpDays!==null?totalUpDays:'—')+'</td>'+
+      '<td class="bl" style="font-size:12px">'+fmtDate(c1)+'</td>'+
+      '<td class="r">'+(c1?c1.bags.toLocaleString():'—')+'</td>'+
+      '<td class="r" style="color:var(--accent)">'+(du1!==null?du1+'d':'—')+'</td>'+
+      '<td class="r">'+sfHtml+'</td>'+
+      '<td class="bl" style="font-size:12px">'+fmtDate(c2)+'</td>'+
+      '<td class="r">'+(c2?c2.bags.toLocaleString():'—')+'</td>'+
+      '<td class="r" style="color:var(--accent)">'+(du2!==null?du2+'d':'—')+'</td>'+
+      '<td class="r bl" style="font-size:12px;color:var(--text2)">'+toOrd(120)+'</td>'+
+      '<td class="r" style="font-size:12px;color:var(--text2)">'+toOrd(150)+'</td>'+
+      '<td class="r" style="font-size:12px;color:var(--text2)">'+toOrd(180)+'</td>';
+    body.appendChild(tr);
+  }
+}
+
+function doExcel(){
+  const wb=XLSX.utils.book_new();
+  const aoa=[['OMNIK LIMITED — RAW MATERIAL PLANNING REPORT'],['Generated: '+today.toLocaleDateString('en-GB')],[''],
+    ['Use','Resin','Manufacturer','Grade/Group','Bags/Day','Stock on Ground','Days Left','Status',
+     'Total Upcoming Bags','Total Upcoming Days','1st Date','1st Bags','Days Until','Shortfall/Overflow',
+     '2nd Date','2nd Bags','Days Until','To Order 120d (MT)','To Order 150d (MT)','To Order 180d (MT)']];
+  function dU2(c){return c?Math.round((c.eta-today)/86400000):null;}
+  function fD2(c){return c?c.eta.toLocaleDateString('en-GB')+(c.tbc?' (TBC)':''):'';}
+  function toO(r,days){if(!r.daily)return '';const gap=r.daily*days-(r.stock+r.upBags);return gap>0?+(gap/40).toFixed(1):'OK';}
+  for(const r of planRows){
+    const c1=r.upcoming[0]||null,c2=r.upcoming[1]||null;
+    const du1=dU2(c1),du2=dU2(c2);
+    const sf1=(c1&&r.daily>0&&du1!==null)?r.daysLeft-du1:null;
+    const totalUpDays=(r.daily>0&&r.upBags>0)?Math.floor((r.stock+r.upBags)/r.daily):null;
+    aoa.push([r.use,r.resin,r.mfr,r.label,r.daily||0,r.stock,r.daysLeft??'N/A',
+      r.status==='green'?'Adequate':r.status==='amber'?'Watch':r.status==='red'?'Critical':'N/A',
+      r.upBags||'',totalUpDays||'',fD2(c1),c1?c1.bags:'',du1!==null?du1+'d':'',
+      sf1!==null?(sf1>=0?'+'+sf1+'d':sf1+'d'):'',fD2(c2),c2?c2.bags:'',du2!==null?du2+'d':'',
+      toO(r,120),toO(r,150),toO(r,180)]);
+  }
+  const ws=XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols']=[{wch:18},{wch:14},{wch:14},{wch:28},{wch:10},{wch:16},{wch:10},{wch:10},{wch:18},{wch:16},{wch:14},{wch:12},{wch:12},{wch:20},{wch:14},{wch:12},{wch:12},{wch:14},{wch:14},{wch:14}];
+  XLSX.utils.book_append_sheet(wb,ws,'RM Plan');
+  const aoa2=[['Material','MT','Bags (25kg)','ETA','TBC?','Sheet']];
+  for(const c of containers)aoa2.push([c.material,c.mt,c.bags,c.eta.toLocaleDateString('en-GB'),c.tbc?'Yes':'No',c.sheet]);
+  const ws2=XLSX.utils.aoa_to_sheet(aoa2);
+  ws2['!cols']=[{wch:32},{wch:10},{wch:12},{wch:14},{wch:8},{wch:14}];
+  XLSX.utils.book_append_sheet(wb,ws2,'Upcoming Containers');
+  XLSX.writeFile(wb,'Omnik_RM_'+today.toLocaleDateString('en-GB').replace(/\//g,'-')+'.xlsx');
+  toast('✅ Excel downloaded');
+}
+
+function doPDF(){
+  const pw=window.open('','_blank');
+  const ds=today.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+  const crit=planRows.filter(r=>r.status==='red'&&r.daily>0).length;
+  const watch=planRows.filter(r=>r.status==='amber').length;
+  const ok=planRows.filter(r=>r.status==='green').length;
+  function dU3(c){return c?Math.round((c.eta-today)/86400000):null;}
+  function fD3(c){if(!c)return '—';return c.eta.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'2-digit'})+(c.tbc?' <span class="tbc">TBC</span>':'');}
+  function toO3(r,days){if(!r.daily)return '—';const gap=r.daily*days-(r.stock+r.upBags);return gap>0?(gap/40).toFixed(1)+' MT':'OK';}
+  let rows='';let lastUse=null;
+  for(const r of planRows){
+    if(r.use!==lastUse){rows+='<tr class="gh"><td colspan="17">'+r.use+'</td></tr>';lastUse=r.use;}
+    const sl=r.status==='green'?'Adequate':r.status==='amber'?'Watch':r.status==='red'?'Critical':'N/A';
+    const bc=r.status==='green'?'bg':r.status==='amber'?'bam':r.status==='red'?'br':'bgy';
+    const dc=r.daysLeft!==null&&r.daysLeft<30?'cr':r.daysLeft!==null&&r.daysLeft<60?'wa':'';
+    const c1=r.upcoming[0]||null,c2=r.upcoming[1]||null;
+    const du1=dU3(c1),du2=dU3(c2);
+    const sf1=(c1&&r.daily>0&&du1!==null)?r.daysLeft-du1:null;
+    const sfH=sf1!==null?(sf1>=0?'<span class="ov">+'+sf1+'d</span>':'<span class="sf">'+sf1+'d</span>'):'—';
+    const tub=r.upBags,tud=(r.daily>0&&tub>0)?Math.floor((r.stock+tub)/r.daily):null;
+    rows+='<tr>'+
+      '<td style="font-weight:500">'+r.label+'</td>'+
+      '<td class="n">'+r.stock.toLocaleString()+'</td>'+
+      '<td class="n">'+(r.daily||'—')+'</td>'+
+      '<td class="n '+(dc||'')+'">'+(r.daysLeft!==null?r.daysLeft:'—')+'</td>'+
+      '<td><span class="b '+bc+'">'+sl+'</span></td>'+
+      '<td class="n bl">'+(tub>0?tub.toLocaleString():'—')+'</td>'+
+      '<td class="n">'+(tud!==null?tud:'—')+'</td>'+
+      '<td class="bl" style="font-size:7.5pt">'+fD3(c1)+'</td>'+
+      '<td class="n">'+(c1?c1.bags.toLocaleString():'—')+'</td>'+
+      '<td class="n">'+(du1!==null?du1+'d':'—')+'</td>'+
+      '<td class="n">'+sfH+'</td>'+
+      '<td class="bl" style="font-size:7.5pt">'+fD3(c2)+'</td>'+
+      '<td class="n">'+(c2?c2.bags.toLocaleString():'—')+'</td>'+
+      '<td class="n">'+(du2!==null?du2+'d':'—')+'</td>'+
+      '<td class="n bl">'+toO3(r,120)+'</td>'+
+      '<td class="n">'+toO3(r,150)+'</td>'+
+      '<td class="n">'+toO3(r,180)+'</td>'+
+    '</tr>';
+  }
+  pw.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Omnik RM Plan</title><style>'+
+  '@import url(\'https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap\');'+
+  '*{box-sizing:border-box;margin:0;padding:0}body{font-family:\'DM Sans\',sans-serif;font-size:8pt;color:#111;background:#fff}'+
+  '.hdr{background:#0f1117;color:#fff;padding:14px 20px;display:flex;justify-content:space-between;align-items:center}'+
+  '.ht{font-size:14pt;font-weight:700}.hs{font-size:8pt;color:#8b90a7;margin-top:2px}.hd{font-size:8pt;color:#8b90a7;font-family:\'DM Mono\',monospace}'+
+  '.sum{display:flex;gap:10px;padding:12px 20px;background:#f8f9fc;border-bottom:2px solid #e5e7eb}'+
+  '.sc{flex:1;background:#fff;border-radius:6px;padding:10px 12px;border:1px solid #e5e7eb}'+
+  '.sl{font-size:7pt;color:#6b7280;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}'+
+  '.sv{font-size:16pt;font-weight:700;font-family:\'DM Mono\',monospace}'+
+  '.vr{color:#ef4444}.vam{color:#f59e0b}.vg{color:#22c55e}.vb{color:#4f8ef7}'+
+  '.ct{padding:14px 20px}table{width:100%;border-collapse:collapse;font-size:7.5pt}'+
+  'thead tr:first-child th{background:#1a1d27;color:#e8eaf0;padding:6px 7px;text-align:left;font-size:6.5pt;font-weight:700;text-transform:uppercase;letter-spacing:.3px}'+
+  'thead tr:last-child th{background:#222638;color:#8b90a7;padding:5px 7px;text-align:left;font-size:6.5pt;font-weight:600;border-bottom:2px solid #2e3348}'+
+  'th.n,td.n{text-align:right}td{padding:6px 7px;border-bottom:1px solid #f0f0f0;vertical-align:middle}td.n{font-family:\'DM Mono\',monospace}'+
+  '.gh td{background:#f3f4f6;font-weight:700;font-size:6.5pt;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;padding:5px 7px}'+
+  '.b{display:inline-block;padding:2px 6px;border-radius:20px;font-size:6.5pt;font-weight:700}'+
+  '.bg{background:#dcfce7;color:#15803d}.bam{background:#fef3c7;color:#b45309}.br{background:#fee2e2;color:#b91c1c}.bgy{background:#f3f4f6;color:#6b7280}'+
+  '.cr{color:#ef4444;font-weight:700}.wa{color:#f59e0b;font-weight:600}.ov{color:#15803d;font-weight:600}.sf{color:#b91c1c;font-weight:600}'+
+  '.tbc{font-size:6pt;background:#fef3c7;color:#b45309;padding:1px 3px;border-radius:2px;font-weight:700}'+
+  '.bl{border-left:1px solid #e5e7eb}'+
+  '.ft{padding:10px 20px;background:#f8f9fc;border-top:1px solid #e5e7eb;font-size:7pt;color:#9ca3af;display:flex;justify-content:space-between}'+
+  '@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}'+
+  '</style></head><body>'+
+  '<div class="hdr"><div><div class="ht">Omnik RM Planning Report</div><div class="hs">Raw Material Stock &amp; Upcoming Container Analysis</div></div><div class="hd">'+ds+'</div></div>'+
+  '<div class="sum"><div class="sc"><div class="sl">Critical (&lt;30 days)</div><div class="sv vr">'+crit+'</div></div>'+
+  '<div class="sc"><div class="sl">Watch (30–60 days)</div><div class="sv vam">'+watch+'</div></div>'+
+  '<div class="sc"><div class="sl">Adequate (60+ days)</div><div class="sv vg">'+ok+'</div></div>'+
+  '<div class="sc"><div class="sl">Upcoming containers</div><div class="sv vb">'+containers.length+'</div></div></div>'+
+  '<div class="ct"><table><thead><tr>'+
+  '<th rowspan="2">Grade group</th><th class="n" rowspan="2">Stock</th><th class="n" rowspan="2">Bags/day</th>'+
+  '<th class="n" rowspan="2">Days left</th><th rowspan="2">Status</th>'+
+  '<th colspan="2" style="text-align:center" class="bl">Total upcoming</th>'+
+  '<th colspan="4" style="text-align:center" class="bl">1st upcoming</th>'+
+  '<th colspan="3" style="text-align:center" class="bl">2nd upcoming</th>'+
+  '<th colspan="3" style="text-align:center" class="bl">To order (MT)</th></tr><tr>'+
+  '<th class="n bl"># bags</th><th class="n"># days</th>'+
+  '<th class="bl">Date</th><th class="n">Bags</th><th class="n">Days until</th><th class="n">S/O</th>'+
+  '<th class="bl">Date</th><th class="n">Bags</th><th class="n">Days until</th>'+
+  '<th class="n bl">120d</th><th class="n">150d</th><th class="n">180d</th>'+
+  '</tr></thead><tbody>'+rows+'</tbody></table></div>'+
+  '<div class="ft"><span>Omnik Limited — Confidential</span><span>Generated '+ds+' · '+planRows.length+' groups · '+containers.length+' containers</span></div>'+
+  '<script>window.onload=function(){window.print();}<\/script></body></html>');
+  pw.document.close();
+  toast('✅ PDF opened for printing');
+}
+
+function toast(msg){
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+// Init
+checkReady();
+buildConsTable();
+</script>
+</body>
+</html>
